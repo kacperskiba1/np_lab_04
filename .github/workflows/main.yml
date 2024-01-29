@@ -1,38 +1,43 @@
-name: main
+name: Main Workflow
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
 jobs:
   build:
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - operating-system: windows-latest
-            python-version: ("3.9","3.11")
-          - operation-system: ubuntu-latest
-            python-version: ("3.10")
+        python-version: [3.9, 3.10, 3.11]
+        os: [ubuntu-latest, windows-latest]
+        exclude:
+          - python-version: 3.10
+            os: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Update pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install flake8
+          python -m pip install unittest
+
       - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Update Pip
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-      - name: Install flake8
-        run: pip install flake8 pycodestyle
-      - name: Check syntax
-        run: flake8 --count --statistics --show-source
-      - name: Unittest
-        run: |
-          pip install versioneer[toml]==0.29
-          pip install . --no-deps --no-build-isolation
-          python -m unittest discover tests
-      
-        
+        run: python --version
+
+      - name: Check code style with flake8
+        run: flake8
+
+      - name: Run unit tests
+        run: python -m unittest
